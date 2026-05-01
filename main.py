@@ -34,6 +34,9 @@ for post in posts:
     known_ids.add(post["id"])
 print(f"Loaded {len(known_ids)} posts. Now monitoring...")
 
+# Send test message on startup
+send_message("✅ YG Life Monitor is running! You will be notified when a new article is posted.")
+
 while True:
     check()
     time.sleep(120)
