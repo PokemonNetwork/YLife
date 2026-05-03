@@ -26,7 +26,7 @@ def scan_forbidden(start_id):
             continue
         try:
             print(f"Checking {pid}...")
-            response = requests.get(SINGLE_URL.format(pid), timeout=5)
+            response = requests.get(SINGLE_URL.format(pid), timeout=3)
             data = response.json()
             code = data.get("code", "")
             print(f"ID {pid}: status={response.status_code} code={code}")
