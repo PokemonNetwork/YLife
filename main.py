@@ -1,22 +1,55 @@
 import requests
 import time
 import os
+import threading
 
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 CHAT_ID = os.environ["CHAT_ID"]
 API_URL = "https://yg-life.com/wp-json/wp/v2/posts"
 SINGLE_URL = "https://yg-life.com/wp-json/wp/v2/posts/{}"
+TELEGRAM_API = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 known_ids = set()
 known_forbidden = set()
+last_update_id = 0
 
 def send_message(text):
     try:
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+        url = f"{TELEGRAM_API}/sendMessage"
         r = requests.post(url, data={"chat_id": CHAT_ID, "text": text}, timeout=10)
         print(f"Message sent: {r.status_code}")
     except Exception as e:
         print(f"Message failed: {e}")
+
+def get_updates():
+    global last_update_id
+    try:
+        url = f"{TELEGRAM_API}/getUpdates"
+        r = requests.get(url, params={"offset": last_update_id + 1, "timeout": 5}, timeout=10)
+        data = r.json()
+        if data.get("ok"):
+            return data.get("result", [])
+    except Exception as e:
+        print(f"Get updates error: {e}")
+    return []
+
+def check_commands():
+    global last_update_id
+    updates = get_updates()
+    for update in updates:
+        last_update_id = update["update_id"]
+        message = update.get("message", {})
+        text = message.get("text", "").strip().lower()
+        if text == "recheck":
+            print("Recheck command received!")
+            send_message("🔄 Rechecking all known locked articles...")
+            if known_forbidden:
+                msg = f"🔒 Currently known locked articles ({len(known_forbidden)}):\n\n"
+                for pid in sorted(known_forbidden):
+                    msg += f"https://yg-life.com/archives/{pid}\n"
+                send_message(msg)
+            else:
+                send_message("No locked articles currently known.")
 
 def scan_forbidden(start_id):
     print(f"Scanning from {start_id+1} to {start_id+31}...")
@@ -72,9 +105,10 @@ send_message("✅ YG Life Monitor started! Scanning for locked articles...")
 print("Startup scan beginning...")
 scan_forbidden(latest)
 print("Startup scan done!")
-send_message("🔍 Startup scan complete. Monitoring every 2 minutes.")
+send_message("🔍 Startup scan complete. Monitoring every 2 minutes.\n\nSend 'recheck' anytime to see current locked articles!")
 
 while True:
+    check_commands()
     check()
     start = get_scan_start()
     scan_forbidden(start)
