@@ -22,6 +22,7 @@ def scan_forbidden(start_id):
     print(f"Scanning from {start_id+1} to {start_id+31}...")
     for pid in range(start_id + 1, start_id + 31):
         if pid in known_ids or pid in known_forbidden:
+            print(f"Skipping {pid} - already known")
             continue
         try:
             print(f"Checking {pid}...")
@@ -67,7 +68,7 @@ for post in posts:
 latest = max(known_ids)
 print(f"Loaded {len(known_ids)} posts. Latest ID: {latest}")
 
-send_message("✅ YG Life Monitor started!")
+send_message("✅ YG Life Monitor started! Scanning for locked articles...")
 print("Startup scan beginning...")
 scan_forbidden(latest)
 print("Startup scan done!")
